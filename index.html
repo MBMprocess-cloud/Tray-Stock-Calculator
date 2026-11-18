@@ -1,0 +1,688 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tray Stock Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#E6EAED; --panel:#FFFFFF; --ink:#18232B; --muted:#5A6670; --rule:#CBD2D7; --field:#F4F6F7;
+  --oven:#B4650A; --oven-soft:#F6E7D3; --pack:#1C5DA8; --pack-soft:#DCE8F6;
+  --ok:#2F7D4E; --ok-soft:#DDF0E4; --warn:#B42318; --warn-soft:#F9E0DD;
+  --sans:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --cond:"Barlow Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#11171B; --panel:#1A2228; --ink:#E5EAED; --muted:#9AA6AE; --rule:#2D3942; --field:#222C33;
+    --oven:#E59C3E; --oven-soft:#3A2A16; --pack:#6EA8EE; --pack-soft:#1B2D45;
+    --ok:#62C08A; --ok-soft:#173326; --warn:#F07B70; --warn-soft:#3D1D1A; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#11171B; --panel:#1A2228; --ink:#E5EAED; --muted:#9AA6AE; --rule:#2D3942; --field:#222C33;
+  --oven:#E59C3E; --oven-soft:#3A2A16; --pack:#6EA8EE; --pack-soft:#1B2D45;
+  --ok:#62C08A; --ok-soft:#173326; --warn:#F07B70; --warn-soft:#3D1D1A; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--ground);color:var(--ink);font:400 16px/1.5 var(--sans);-webkit-text-size-adjust:100%}
+.wrap{max-width:1220px;margin:0 auto;padding:20px 16px 40px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 24px;margin-bottom:20px;border-bottom:3px solid var(--ink);padding-bottom:12px}
+h1{font:700 clamp(2rem,5vw,3rem)/1 var(--cond);margin:0;letter-spacing:-.01em}
+header.top p{margin:0;color:var(--muted);max-width:52ch}
+.layout{display:grid;gap:20px;grid-template-columns:1fr}
+@media(min-width:960px){.layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.result{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));max-height:calc(100vh - 32px);overflow:auto}}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:18px}
+ol.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+ol.steps>li{counter-increment:s;position:relative;padding:0 0 18px 44px;margin:0 0 18px;border-bottom:1px solid var(--rule)}
+ol.steps>li:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+ol.steps>li::before{content:counter(s);position:absolute;left:0;top:-2px;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--panel);font:700 1.05rem/30px var(--cond);text-align:center}
+h2{font:600 1.25rem/1.2 var(--cond);margin:0 0 10px}
+.plants{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.plants button{font:700 1.4rem/1 var(--cond);padding:12px 0;border:1px solid var(--rule);background:var(--field);color:var(--ink);border-radius:4px;cursor:pointer}
+.plants button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+select,input[type=number]{width:100%;font:500 1rem/1.3 var(--sans);color:var(--ink);background:var(--field);border:1px solid var(--rule);border-radius:4px;padding:10px 12px;max-width:100%}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 12px) 55%;background-size:6px 6px;background-repeat:no-repeat;padding-right:34px}
+:focus-visible{outline:3px solid var(--pack);outline-offset:2px}
+.meta{margin:8px 0 0;font-size:.92rem;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+.check{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:.92rem;color:var(--muted)}
+.check input{width:18px;height:18px;accent-color:var(--pack)}
+label.small{display:block;font-size:.82rem;color:var(--muted);margin-bottom:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fld .src{font-size:.78rem;color:var(--muted);margin-top:3px;min-height:1.1em}
+.fld .src.edited{color:var(--oven)}
+.fld .src.missing{color:var(--warn);font-weight:600}
+.linkbtn{background:none;border:0;padding:0;color:var(--pack);font:500 .9rem var(--sans);text-decoration:underline;cursor:pointer}
+
+/* machine cards */
+.mlist{display:grid;gap:8px}
+.mc{border:1px solid var(--rule);border-radius:5px;background:var(--field)}
+.mc.on{background:var(--panel);border-color:var(--pack);box-shadow:inset 4px 0 0 var(--pack)}
+.mc-head{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.sw{position:relative;width:44px;height:26px;flex:none}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:13px;background:var(--rule);transition:background .15s}
+.sw span::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw input:checked+span{background:var(--pack)}
+.sw input:checked+span::after{transform:translateX(18px)}
+.sw input:focus-visible+span{outline:3px solid var(--pack);outline-offset:2px}
+.mc-name{font:700 1.3rem/1 var(--cond);flex:1;min-width:0}
+.mc-name small{font:500 .82rem var(--sans);color:var(--muted);margin-left:6px}
+.mc-out{font:700 1.2rem var(--cond);color:var(--pack);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mc-out small{font:500 .78rem var(--sans);color:var(--muted)}
+.rm{border:0;background:none;color:var(--muted);font-size:1.3rem;line-height:1;cursor:pointer;padding:2px 4px}
+.mc-body{padding:0 12px 12px 66px;display:none}
+.mc.on .mc-body{display:block}
+.mc-row{display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-top:8px}
+.spd{position:relative}
+.spd input{font:700 1.6rem/1 var(--cond);padding:8px 50px 8px 12px;border:2px solid var(--pack)}
+.spd span{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:600 .95rem var(--cond);color:var(--muted)}
+.mc-std{font-size:.86rem;color:var(--muted);margin:6px 0 0}
+.mc-std b{color:var(--ink)}
+.mc-std .missing{color:var(--warn);font-weight:600}
+.addrow{margin-top:12px;display:grid;gap:6px}
+.none{padding:12px;border:1px dashed var(--rule);border-radius:5px;color:var(--muted);font-size:.92rem}
+
+/* results */
+.result{padding:0}
+.hero{padding:20px 20px 16px;border-bottom:1px solid var(--rule)}
+.hero .lbl{font:600 1.15rem var(--cond);color:var(--muted);margin:0}
+.hero .num{font:700 clamp(4rem,13vw,6.5rem)/.95 var(--cond);margin:4px 0 2px;color:var(--pack);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.hero .num small{font-size:.3em;color:var(--muted);font-weight:600;letter-spacing:0;margin-left:6px}
+.hero .sub{margin:0;color:var(--muted);font-size:.95rem}
+.hero .empty{font:600 1.35rem/1.3 var(--cond);color:var(--ink);margin:10px 0 4px}
+.std{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;padding:14px 20px;background:var(--pack-soft);border-bottom:1px solid var(--rule);align-items:center}
+.std .k{font:600 1rem var(--cond);color:var(--muted)}
+.std .v{font:700 1.7rem/1.1 var(--cond);font-variant-numeric:tabular-nums}
+.std .v small{font:500 .92rem var(--sans);color:var(--muted);margin-left:6px}
+.chip{display:inline-block;margin:12px 20px 0;padding:4px 10px;border-radius:999px;font:600 .9rem var(--sans)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.low{background:var(--warn-soft);color:var(--warn)}
+.chip.high{background:var(--oven-soft);color:var(--oven)}
+.tbl{padding:14px 20px 4px;overflow-x:auto}
+.tbl table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
+.tbl th{font:600 .95rem var(--cond);color:var(--muted);text-align:right;padding:4px 6px;border-bottom:2px solid var(--ink);white-space:nowrap}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl td{padding:6px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+.tbl td:first-child{white-space:normal}
+.tbl td small{color:var(--muted)}
+.tbl tfoot td{font-weight:700;border-bottom:0;border-top:2px solid var(--ink)}
+.flow{padding:16px 20px;border-bottom:1px solid var(--rule)}
+.flow h3,.stock h3{font:600 1.15rem var(--cond);margin:0 0 10px}
+.bar{margin-bottom:12px}
+.bar .row{display:flex;justify-content:space-between;gap:8px;font-size:.92rem;margin-bottom:4px}
+.bar .row b{font:700 1.15rem var(--cond);font-variant-numeric:tabular-nums;white-space:nowrap}
+.track{height:26px;background:var(--field);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.fill{height:100%;width:0;transition:width .35s ease}
+.fill.oven{--c:var(--oven)} .fill.pack{--c:var(--pack)}
+.fill{background-image:linear-gradient(90deg,var(--c) 0 calc(100% - 3px),transparent calc(100% - 3px));background-repeat:repeat-x;background-size:20px 100%}
+.scale{font-size:.8rem;color:var(--muted);margin:0}
+.net{margin:12px 0 0;padding:12px 14px;border-left:4px solid var(--ink);background:var(--field);font-size:.98rem}
+.net strong{font-family:var(--cond);font-size:1.2rem}
+.net.grow{border-color:var(--oven)} .net.clear{border-color:var(--ok)}
+.stock{padding:16px 20px;border-bottom:1px solid var(--rule)}
+.stockrow{display:grid;grid-template-columns:minmax(0,180px) 1fr;gap:12px;align-items:end}
+.formula{padding:14px 20px 18px;font-size:.86rem;color:var(--muted)}
+.formula p{margin:0 0 4px}
+.formula code{font-family:inherit;color:var(--ink);font-weight:600}
+footer{margin-top:22px;font-size:.82rem;color:var(--muted);max-width:90ch}
+footer p{margin:0 0 4px}
+@media(max-width:520px){.plants button{font-size:1.2rem;padding:10px 0}.grid2,.stockrow{grid-template-columns:1fr}.mc-body{padding-left:12px}.mc-row{grid-template-columns:1fr 1fr}ol.steps>li{padding-left:0}ol.steps>li::before{position:static;display:inline-block;margin-bottom:6px}}
+@media(prefers-reduced-motion:reduce){.fill,.sw span,.sw span::after{transition:none}}
+.split{display:flex;height:34px;border:1px solid var(--rule);border-radius:3px;overflow:hidden;background:var(--field)}
+.seg{height:100%;transition:width .35s ease}
+.seg.m{background:var(--pack)}
+.seg.t{background-color:var(--oven);background-image:repeating-linear-gradient(90deg,transparent 0 16px,rgba(255,255,255,.35) 16px 18px)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 4px;font-size:.92rem}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.legend i.m{background:var(--pack)} .legend i.t{background:var(--oven)}
+.legend b{font-family:var(--cond);font-size:1.05rem;margin-left:4px;font-variant-numeric:tabular-nums}
+.hero .num{color:var(--oven)}
+.hero .sub b{color:var(--ink)}
+.hero .warnline{color:var(--warn);margin-top:6px;font-weight:600}
+.std .v.small{font:500 .95rem/1.4 var(--sans);color:var(--ink)}
+.tbl tr.trays td{color:var(--oven);border-top:1px solid var(--rule)}
+@media(prefers-reduced-motion:reduce){.seg{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Tray Stock Calculator</h1>
+  <p>The oven doesn't slow down when the packing machines do. Whatever the machines can't take is packed into trays by hand. This works out how many trays per minute.</p>
+</header>
+
+<div class="layout">
+<section class="panel setup" aria-label="Line setup">
+  <ol class="steps">
+    <li>
+      <h2>Plant</h2>
+      <div class="plants" role="group" aria-label="Plant number" id="plants"></div>
+    </li>
+    <li>
+      <h2><label for="biscuit">Biscuit type</label></h2>
+      <select id="biscuit"></select>
+      <p class="meta" id="ovenMeta"></p>
+      <div class="grid2" style="margin-top:12px">
+        <div class="fld"><label class="small" for="trayKg">Weight of one tray (kg)</label><input type="number" id="trayKg" min="0" step="any" inputmode="decimal"><div class="src" id="trayKgSrc"></div></div>
+        <div class="fld"><label class="small" for="ovenKg">Standard oven output (kg/hr)</label><input type="number" id="ovenKg" min="0" step="any" inputmode="decimal"><div class="src" id="ovenKgSrc"></div></div>
+      </div>
+      <button type="button" class="linkbtn" id="resetVals">Restore sheet values</button>
+    </li>
+    <li>
+      <h2>Machines running</h2>
+      <p class="meta" style="margin:0 0 10px">Switch on each machine packing this biscuit, pick its pack and enter its actual speed.</p>
+      <div class="mlist" id="mlist"></div>
+      <div class="addrow">
+        <label class="small" for="addSel">Add a machine that isn't listed</label>
+        <select id="addSel"></select>
+        <label class="check"><input type="checkbox" id="allPlants"> Include machines from every plant</label>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<section class="panel result" aria-live="polite" aria-label="Result">
+  <div class="hero" id="hero"></div>
+  <div class="std" id="std"></div>
+  <div id="chipWrap"></div>
+  <div class="flow">
+    <h3>Where the oven output goes</h3>
+    <div class="split" role="img" id="split" aria-label="Oven output split"><div class="seg m" id="segM"></div><div class="seg t" id="segT"></div></div>
+    <div class="legend"><span><i class="m"></i>Packed by machines <b id="lgM">–</b></span><span><i class="t"></i>Packed into trays <b id="lgT">–</b></span></div>
+    <p class="scale" id="splitNote"></p>
+  </div>
+  <div class="tbl" id="tbl"></div>
+  <p class="scale" style="padding:0 20px 12px" id="tblNote"></p>
+  <div class="stock">
+    <h3>Tray stock</h3>
+    <div class="stockrow">
+      <div><label class="small" for="stockNow">Trays in stock now (optional)</label><input type="number" id="stockNow" min="0" step="1" inputmode="numeric" placeholder="e.g. 40"></div>
+      <p id="stockOut" class="meta" style="margin:0"></p>
+    </div>
+  </div>
+  <div class="formula">
+    <p>Machine output = <code>speed × pack weight (g) ÷ 1000</code> kg/min, added up across running machines.</p>
+    <p>Trays per minute = <code>(oven output kg/hr ÷ 60 − machine output kg/min) ÷ tray weight (kg)</code>. If the machines take more than the oven sends, no trays are needed.</p>
+  </div>
+</section>
+</div>
+
+<footer>
+  <p>Oven output: PDN-SP-243, issue 02 (30.04.2025). Tray weights: PDN-SP-243, revision 02 (21.11.2023).</p>
+  <p>Machine speeds and 8-hour case targets: Packetting Machine Targets sheet. Grouped machines on the sheet (such as MP 08/09/10) are shown one by one, each with the sheet speed. A speed range is shown as its low and high end.</p>
+</footer>
+</div>
+
+<script>
+const OVEN = [
+[1,'BOD Vegy Cracker',900,5.2,null,[]],
+[1,'BOD Whole Wheat Vegi Cracker',900,5.2,10.06,[]],
+[1,'Gem',950,4.05,6.79,['GEM']],
+[1,'Cheesebits',735,4.25,9.3,['CHEESEBIT']],
+[1,'Cheesebits (Snackers Cutter)',660,4.25,10.2,['CHEESEBIT']],
+[1,'Chickbits',718,4.15,8.32,['CHICK BIT']],
+[1,'Krisco',719,5.5,8.21,['KRISCO']],
+[1,'Kritz',722,6,7.98,['KRITZ']],
+[1,'Kritz Bite',740,5.3,9.89,['KRITZ BITE']],
+[1,'Krisco Bite',625,5.3,9.5,['KRISCO BITE']],
+[1,'Snackers (Spicy)',680,4.05,7.94,['SNACKERS']],
+[1,'Snackers (Cheese & Chillie)',690,4.05,7.88,['SNACKERS']],
+[1,'Snackers (Masala)',700,4.05,8.85,['SNACKERS']],
+[1,'Snackers (Sweet Chilie)',700,4.05,null,['SNACKERS']],
+[1,'Snackers (Tomato)',695,4.05,null,['SNACKERS']],
+[1,'Snackers - Ramen',680,4.05,null,[]],
+[1,'Cheese Puff',1100,4.35,null,['CHEESE PUFF']],
+[1,'Tempo Kottu',640,5.35,null,[]],
+[1,'Tempo Lunumiris',640,5.35,null,[]],
+[1,'Tempo Cheese & Onion',640,5.35,null,[]],
+[1,'Marie - Export',915,5.25,null,['EXPORT MARIE']],
+[2,'Light Marie',870,4.4,8.1,['LIGHT MARIE']],
+[2,'Lincoln',1450,5.45,null,[]],
+[2,'Gold Marie',1275,3.55,11.18,['GOLD MARIE']],
+[2,'Chocolate Marie',1140,4.15,11.14,['CHOCOLATE MARIE']],
+[2,'Gem',1350,4.05,6.79,['GEM']],
+[3,'Custard',2750,5.15,14.5,['CUSTARD CREAM']],
+[3,'Chocolate Cream',2740,5.15,14.32,['CHOCOLATE CREAM']],
+[3,'Chocolate 30% Less Sugar',2675,5.15,null,['CHOCOLATE CREAM']],
+[3,'Inguru',1825,8,14.11,['INGURU']],
+[3,'Inguru 30% Less Sugar',1825,8,null,['INGURU']],
+[3,'Orange Cream (S)',2750,5.15,14.16,['ORANGE CREAM']],
+[3,'Orange Cream (R)',2750,5.2,14.3,['ORANGE CREAM']],
+[3,'Real Double Cream (S & V)',2550,5.15,15.03,['RDC SV']],
+[3,'Real Double Cream (C & V)',2600,5.15,15.64,['RDC CV']],
+[3,'Honey Cream',2750,5.2,14.17,['HONEY/ORANGE']],
+[3,'Sugar Free',1700,7,15.3,['SUGAR FREE']],
+[3,'Nice',2060,6.3,16.36,['NICE']],
+[3,'Milky Sorties',1600,5.45,10.36,['SORTIES CM','MILKY SORTIES']],
+[3,'Yoyo - Chocolate',1200,6.5,9.63,['YOYO']],
+[3,'Yoyo - Vanilla',1200,6.5,8.92,['YOYO']],
+[3,'Yoyo - Lemon',1290,6.5,8.82,['YOYO']],
+[3,'Sorties (50g)',1150,6.5,9.02,['SORTIES','SORTIES CM']],
+[4,'Smart Cream Cracker Buddy',1435,5.1,8.1,['SCC BUDDY']],
+[4,'Cream Cracker With Veggie',1400,5.15,null,[]],
+[4,'Whole Wheat Cracker with Veggie',1350,5.15,null,[]],
+[4,'White Chocolate Puff',1900,4.2,10.09,['WHITE CHOCOLATE PUFF','WHITE CHOCOLATE CREAM']],
+[4,'Cr/Cr (Lemon cutter)',1750,5.2,null,[]],
+[4,'Chocolate Puff',1995,4.2,10.82,['CHOCOLATE PUFF']],
+[4,'Lemon Puff',1850,4.3,11.74,['LEMON PUFF']],
+[4,'Lemon Puff 30% Less Sugar',1850,4.3,null,['LEMON PUFF']],
+[4,'Maliban Cream',1400,4.25,10.95,[]],
+[4,'Cracker Thins',1200,4.25,null,[]],
+[4,'Old Cream Cracker',1400,5.15,null,[]],
+[4,'Spicy Cracker',1100,6,9.95,['SPICY CRACKER']],
+[4,'Veggie Cracker',1100,6,12.41,['VEGGIE CRACKER']],
+[4,'BOD Multigrain Cracker Export',1150,5.15,null,[]],
+[4,'EX_Marie',1760,4.45,null,['EXPORT MARIE']],
+[4,'Maliban Milky Cream',1900,4.25,null,['MALIBAN MILK CREAM']],
+[5,'Smart Cream Cracker',1650,4.4,10.12,['SMART CREAM CRACKER']],
+[5,'Real Bran Cracker',1460,4.5,10.22,['REAL BRAN CRACKER']],
+[5,'Smart Cream Cracker Without (Premix)',1650,4.4,null,['SMART CREAM CRACKER']],
+[5,'Cream Cracker Low Salt',1700,4.4,null,[]],
+[5,"Whole Wheat Cracker (B'O Day)",1610,4.5,null,[]],
+[5,'England Best Cream Cracker',1650,4.4,null,[]],
+[6,'Double Twist Cookies',675,10,14.92,['DOUBLE TWIST']],
+[6,'Digestive',1230,8.15,null,[]],
+[6,'Hawaiian Cookie',1185,6,14.35,['HAWAIIAN COOKIES']],
+[6,'Milk Short Cake (Small Cutter)',1270,7,14,['MILK SHORT CAKE']],
+[6,'Milk Short Cake (Large Cutter)',1145,7,14,['MILK SHORT CAKE']],
+[6,'Sunring Vanilla',1150,7,null,[]],
+[6,'Choco Carol',640,9,null,[]],
+[6,'Sunring Choco',1150,7,11.59,[]],
+[6,'Chekkers Coffee Cookie',875,10,14.68,['CHECKERS COFFEE COOKIE']],
+[6,'Inguru',1235,8,null,['INGURU']],
+[6,'Baby Rusks - Original',630,14,null,['BABY RUSKS ORIGINAL']],
+[6,'Baby Rusks - Apple',640,14,null,['BABY RUSKS APPLE']],
+[6,'Baby Rusks - Banana',560,14,null,['BABY RUSKS BANANA']],
+[6,'Roundies (Vanilla)',1160,7,10.96,['ROUNDIES']],
+[6,'Milky Cookie',1750,8,13.34,[]],
+[6,'Choco Cookie',1750,8,14,[]],
+[6,'Milk Butter',825,11,null,[]],
+[6,'Butter Square',220,11,null,[]],
+[6,'Butter Fly',333,11,null,[]],
+[6,'Choco Chip',680,11,null,[]],
+[6,'Butter Twist',650,11,null,[]]
+].map((r,i)=>({id:i,plant:r[0],name:r[1],kgHr:r[2],bake:r[3],tray:r[4],pk:r[5]}));
+
+/* ---------- Packeting machine targets: rows are [product, key, weight, feeding lines, speed, target per 8 hrs] ---------- */
+const SNK='Snackers (Masala, C&C, Spicy, Tomato, S&C)';
+const MACHINES = [
+{p:1,m:'VS 100 01 & 02',n:2,rows:[
+ ['Gem','GEM','100g','','80','750'],['Chick Bit','CHICK BIT','30g','','80','600'],['Cheesebit','CHEESEBIT','25g','','80','600'],
+ ['Gem','GEM','50g','','80','750'],['Chick Bit','CHICK BIT','80g','','80','925'],[SNK,'SNACKERS','25g','','80','450'],
+ ['Krisco Bite','KRISCO BITE','30g','','80','600'],['Cheesebit','CHEESEBIT','170g','','80','2500'],['Kritz Bite','KRITZ BITE','20g','','80','600'],
+ ['Kritz','KRITZ','170g','','80','2500'],['Krisco','KRISCO','170g','','80','2500']]},
+{p:1,m:'Pakona 01 & 02',n:2,rows:[
+ ['Gem (Pakona 01)','GEM','100g','','55','500'],['Chick Bit','CHICK BIT','30g','','58','450'],['Cheesebit','CHEESEBIT','25g','','58','450'],
+ ['Gem (Pakona 01 only)','GEM','50g','','58','525'],[SNK,'SNACKERS','25g','','58','325'],['Kritz Bite','KRITZ BITE','20g','','58','450'],
+ ['Krisco Bite','KRISCO BITE','30g','','58','450']]},
+{p:1,m:'Pakona 03 & 04',n:2,rows:[
+ ['Chick Bit','CHICK BIT','30g','','80','600'],['Cheesebit','CHEESEBIT','25g','','80','600'],[SNK,'SNACKERS','25g','','80','450'],
+ ['Kritz Bite','KRITZ BITE','20g','','80','600'],['Krisco Bite','KRISCO BITE','30g','','80','600']]},
+{p:1,m:'SL 80',n:1,rows:[
+ ['Cheesebit','CHEESEBIT','170g','','40-45','1400'],['Kritz','KRITZ','170g','','40-45','1400'],['Lemon Puff','LEMON PUFF','400g','','35-40','1350'],['Krisco','KRISCO','170g','','40-45','1400']]},
+{p:1,m:'Ishida',n:1,rows:[
+ ['Cheesebit','CHEESEBIT','245g','','45-50','2400'],['Chick Bit','CHICK BIT','270g','','45-50','2400'],['Kritz','KRITZ','230g','','45-50','2400'],['Krisco','KRISCO','215g','','45-50','2400']]},
+{p:1,m:'Tin Seamer 01',n:1,rows:[
+ ['Cheesebit','CHEESEBIT','245g','','35-40','1900'],['Chick Bit','CHICK BIT','270g','','35-40','1900'],['Kritz','KRITZ','230g','','35-40','1900'],['Krisco','KRISCO','215g','','35-40','1900']]},
+{p:1,m:'Tin Seamer 02',n:1,rows:[
+ ['Cheesebit','CHEESEBIT','245g','','30-35','1650'],['Chick Bit','CHICK BIT','270g','','30-35','1650'],['Kritz','KRITZ','230g','','30-35','1650'],['Krisco','KRISCO','215g','','30-35','1650']]},
+
+{p:2,m:'MP 08/09/10',n:3,rows:[
+ ['Gold Marie','GOLD MARIE','80g','','92-105','2250'],['Light Marie','LIGHT MARIE','50g','','96-100','2350'],
+ ['Chocolate Marie','CHOCOLATE MARIE','75g','','85-98','2050'],['Faluda Marie','FALUDA MARIE','75g','','85-98','2050']]},
+{p:2,m:'MP 12',n:1,rows:[
+ ['Gold Marie','GOLD MARIE','350g','7 lines','22-26','3000'],['Gold Marie','GOLD MARIE','350g','8 lines','26-30','3450'],
+ ['Gold Marie','GOLD MARIE','350g','9 lines','30-34','3850'],['Gold Marie','GOLD MARIE','350g','10 lines','34-38','4300'],
+ ['Gold Marie','GOLD MARIE','240g','7 lines','34-38','1475'],['Gold Marie','GOLD MARIE','240g','8 lines','40-44','1675'],
+ ['Light Marie','LIGHT MARIE','220g','6 lines','18-22','2600'],['Light Marie','LIGHT MARIE','220g','7 lines','22-26','3000'],
+ ['Light Marie','LIGHT MARIE','220g','8 lines','26-30','3400'],
+ ['Chocolate Marie','CHOCOLATE MARIE','300g','7 lines','22-26','3000'],['Chocolate Marie','CHOCOLATE MARIE','300g','8 lines','26-30','3400'],
+ ['Chocolate Marie','CHOCOLATE MARIE','300g','9 lines','30-34','3800'],['Chocolate Marie','CHOCOLATE MARIE','300g','10 lines','34-38','4200']]},
+
+{p:3,m:'Cambell 01 & 02',n:2,rows:[
+ ['Chocolate Cream','CHOCOLATE CREAM','100g','','65-78','1300'],['Custard Cream','CUSTARD CREAM','100g','','65-78','1300'],
+ ['Orange Cream','ORANGE CREAM','100g','','65-78','1300'],['Real Double Cream (S&V)','RDC SV','100g','','65-75','1300'],
+ ['Real Double Cream (V&C)','RDC CV','100g','','65-75','1300']]},
+{p:3,m:'Cavanna 01',n:1,rows:[
+ ['Chocolate Cream','CHOCOLATE CREAM','100g','','90-98','800'],['Custard Cream','CUSTARD CREAM','100g','','90-98','800'],['Orange Cream','ORANGE CREAM','100g','','90-98','800']]},
+{p:3,m:'MP 01',n:1,rows:[
+ ['Chocolate Cream','CHOCOLATE CREAM','500g','','26-30','3300'],['Chocolate Cream','CHOCOLATE CREAM','400g','','26-30','3300'],
+ ['Orange Cream','ORANGE CREAM','410g','','26-30','3300'],['Custard Cream','CUSTARD CREAM','410g','','26-30','3300']]},
+{p:3,m:'MP 05 & 06',n:2,rows:[
+ ['Chocolate Cream','CHOCOLATE CREAM','500g','','28-36','3450'],['Chocolate Cream','CHOCOLATE CREAM','400g','','28-36','3450'],
+ ['Chocolate Cream','CHOCOLATE CREAM','200g','','36-45','1500'],['Custard Cream','CUSTARD CREAM','410g','','26-36','3300'],
+ ['Custard Cream','CUSTARD CREAM','200g','','36-45','1500'],['Orange Cream','ORANGE CREAM','410g','','26-36','3300'],
+ ['Orange Cream','ORANGE CREAM','200g','','36-45','1500']]},
+{p:3,m:'Peters',n:1,cream:true,rows:[
+ ['Chocolate Cream','CHOCOLATE CREAM','Creaming','','1400',''],['Custard Cream','CUSTARD CREAM','Creaming','','1400',''],
+ ['Orange Cream','ORANGE CREAM','Creaming','','1400',''],['Real Double Cream (S&V)','RDC SV','Creaming','','1300-1350',''],
+ ['Real Double Cream (C&V)','RDC CV','Creaming','','1300-1350','']]},
+{p:3,m:'BP 4',n:1,cream:true,rows:[
+ ['Chocolate Cream','CHOCOLATE CREAM','Creaming','','2750-2800',''],['Custard Cream','CUSTARD CREAM','Creaming','','2750-2800',''],['Orange Cream','ORANGE CREAM','Creaming','','2750-2800','']]},
+{p:3,m:'MP 19/20/21/22',n:4,rows:[
+ ['Sugar Free','SUGAR FREE','110g','','65','900'],['Sugar Free','SUGAR FREE','220g','','30-40','500'],['Nice','NICE','100g','','80-95','650'],
+ ['Yoyo (Choco / Vanilla / Lemon)','YOYO','50g','','100-110','825'],['Inguru','INGURU','80g','','85-100','825'],['Sorties','SORTIES','50g','','90-100','725']]},
+{p:3,m:'MP 15/16/17/18',n:4,rows:[
+ ['Nice','NICE','435g','5 lines','16-20','2000'],['Nice','NICE','435g','6 lines','20-22','2400'],
+ ['Yoyo (Choco / Vanilla / Lemon)','YOYO','240g','','22-26','2700'],['Inguru','INGURU','240g','','30-35','600'],
+ ['Inguru','INGURU','370g','','20-25','1600'],['Sorties (Choco / Milky)','SORTIES CM','325g','','20-24','2500']]},
+
+{p:4,m:'BP 2',n:1,cream:true,rows:[
+ ['Lemon Puff','LEMON PUFF','Creaming','','950-1000',''],['Chocolate Puff','CHOCOLATE PUFF','Creaming','','950',''],
+ ['White Chocolate Cream','WHITE CHOCOLATE CREAM','Creaming','','950',''],['Honey / Orange','HONEY/ORANGE','Creaming','','650-700',''],
+ ['Custard Cream','CUSTARD CREAM','Creaming','','700',''],['Cheese Puff','CHEESE PUFF','Creaming','','750',''],
+ ['Maliban Milk Cream','MALIBAN MILK CREAM','Creaming','','650-700',''],['Orange Cream','ORANGE CREAM','Creaming','','700','']]},
+{p:4,m:'VHC 4',n:1,cream:true,rows:[
+ ['Lemon Puff','LEMON PUFF','Creaming','','1800-1900',''],['Chocolate Puff','CHOCOLATE PUFF','Creaming','','1800-1850',''],
+ ['White Chocolate Puff','WHITE CHOCOLATE PUFF','Creaming','','1800',''],['Cheese Puff','CHEESE PUFF','Creaming','','1500-1600','']]},
+{p:4,m:'AW 01 & 02',n:2,rows:[
+ ['Lemon Puff','LEMON PUFF','200g','2 machines','75-85','2500'],['Cheese Puff (from Plant 01)','CHEESE PUFF','200g','2 machines','45-55','1500'],
+ ['Chocolate Puff','CHOCOLATE PUFF','200g','2 machines','75-85','2600'],['White Chocolate Puff','WHITE CHOCOLATE PUFF','200g','2 machines','75-85','2550']]},
+{p:4,m:'AW 03',n:1,rows:[
+ ['Chocolate Puff','CHOCOLATE PUFF','100g','','70-80','1200'],['Lemon Puff','LEMON PUFF','100g','','65-75','1150'],
+ ['Spicy Cracker','SPICY CRACKER','85g','','55-65','1050'],['Veggie Cracker','VEGGIE CRACKER','85g','','55-65','1050']]},
+{p:4,m:'MP 14',n:1,rows:[
+ ['S.Cr.Cr Buddy','SCC BUDDY','230g','4 lines','20-25','950'],['S.Cr.Cr Buddy','SCC BUDDY','230g','7 lines','38-44','1650'],
+ ['S.Cr.Cr Buddy','SCC BUDDY','230g','Tray feeding','20-25','800'],['Export Marie','EXPORT MARIE','400g','Tray feeding','18-22','750']]},
+{p:4,m:'MP 23',n:1,rows:[
+ ['Spicy Cracker','SPICY CRACKER','170g','9 lines','65-75','1150'],['Veggie Cracker','VEGGIE CRACKER','170g','9 lines','65-75','1150'],
+ ['S.Cr.Cr Buddy','SCC BUDDY','85g','4 lines','55-65','600']]},
+{p:4,m:'MP 03',n:1,rows:[
+ ['Spicy Cracker','SPICY CRACKER','170g','6 lines','35-45','650'],['Veggie Cracker','VEGGIE CRACKER','170g','6 lines','35-45','650']]},
+{p:4,m:'MP 24',n:1,rows:[
+ ['S.Cr.Cr Buddy','SCC BUDDY','230g','9 lines','50-55','2100'],['S.Cr.Cr Buddy','SCC BUDDY','230g','10 lines','55-60','2300'],
+ ['S.Cr.Cr Buddy','SCC BUDDY','230g','11 lines','60-70','2550']]},
+
+{p:5,m:'MP 04',n:1,rows:[
+ ['Smart Cream Cracker','SMART CREAM CRACKER','190g','6 lines','45-50','580'],['Smart Cream Cracker','SMART CREAM CRACKER','190g','7 lines','55-60','675'],
+ ['Smart Cream Cracker','SMART CREAM CRACKER','190g','8 lines','60-65','775'],['Smart Cream Cracker','SMART CREAM CRACKER','190g','9 lines','70-75','875'],
+ ['Smart Cream Cracker','SMART CREAM CRACKER','500g','Re-feeding (500g)','','275'],
+ ['Real Bran Cracker','REAL BRAN CRACKER','210g','7 lines','48-55','1000'],['Real Bran Cracker','REAL BRAN CRACKER','210g','8 lines','58-62','1150'],
+ ['Real Bran Cracker','REAL BRAN CRACKER','210g','9 lines','62-66','1300']]},
+{p:5,m:'MP 07',n:1,rows:[
+ ['Smart Cream Cracker','SMART CREAM CRACKER','125g','6 lines','72-74','725'],['Smart Cream Cracker','SMART CREAM CRACKER','125g','7 lines','78-82','850'],
+ ['Smart Cream Cracker','SMART CREAM CRACKER','500g','Re-feeding (500g)','','350'],
+ ['Real Bran Cracker','REAL BRAN CRACKER','140g','7 lines','72-78','900'],['Real Bran Cracker','REAL BRAN CRACKER','140g','8 lines','85-95','1050']]},
+{p:5,m:'MP 11',n:1,rows:[
+ ['Smart Cream Cracker','SMART CREAM CRACKER','330g','7 lines','38-42','2450'],['Smart Cream Cracker','SMART CREAM CRACKER','330g','8 lines','42-48','2750'],
+ ['Smart Cream Cracker','SMART CREAM CRACKER','330g','9 lines','48-52','3050'],
+ ['Smart Cream Cracker','SMART CREAM CRACKER','500g','7 lines','24-26','3000 (S) / 1500 (L)'],['Smart Cream Cracker','SMART CREAM CRACKER','500g','8 lines','28-32','3600 (S) / 1800 (L)'],
+ ['Smart Cream Cracker','SMART CREAM CRACKER','500g','9 lines','32-35','4050 (S) / 2025 (L)'],['Smart Cream Cracker','SMART CREAM CRACKER','500g','10 lines','35-37','4400 (S) / 2200 (L)'],
+ ['Smart Cream Cracker','SMART CREAM CRACKER','500g','Re-feeding','44-48','5500 (S) / 2750 (L)']]},
+
+{p:6,m:'MP 25/26',n:2,rows:[
+ ['Milk Short Cake','MILK SHORT CAKE','85g','','40-95','900'],['Hawaiian Cookies','HAWAIIAN COOKIES','100g','','60-78','1225'],
+ ['Inguru','INGURU','80g','3 lines','40-75','450'],['Double Twist','DOUBLE TWIST','85g','','60-68','650'],
+ ['Checkers Coffee Cookie','CHECKERS COFFEE COOKIE','95g','','75-80','750']]},
+{p:6,m:'MP 27/28',n:2,rows:[
+ ['Milk Short Cake','MILK SHORT CAKE','200g','','45-50','975'],['Hawaiian Cookies','HAWAIIAN COOKIES','200g','','40-50','875'],
+ ['Inguru','INGURU','240g','7 lines','30-38','725']]},
+{p:6,m:'DXD 01',n:1,rows:[
+ ['Checkers Coffee Cookie','CHECKERS COFFEE COOKIE','195g','','30-35','1400'],['Gift Selection','GIFT SELECTION','400g','','20-25','550']]},
+{p:6,m:'RS',n:1,rows:[
+ ['Gold Marie','GOLD MARIE','4Bis','','100','275'],['Smart Cr. Cr.','SMART CREAM CRACKER','2Bis','','100','240'],['Smart Cr. Cr.','SMART CREAM CRACKER','4Bis','','60','450'],
+ ['Smart Cr. Cr. Buddy','SCC BUDDY','2Bis','','100','400'],['Real Bran Cr.','REAL BRAN CRACKER','2Bis','','80','320'],['Real Bran Cr.','REAL BRAN CRACKER','4Bis','','60','450'],
+ ['Butter Cookie','BUTTER COOKIE','2Bis','','100','240'],['Chocolate Cream','CHOCOLATE CREAM','2Bis','','60','210'],['Chocolate Cream','CHOCOLATE CREAM','45g','','60','300'],
+ ['Lemon Puff','LEMON PUFF','2Bis','','55-60','250'],['Milky Sorties','MILKY SORTIES','38g','','60','300']]},
+{p:6,m:'FS-01',n:1,rows:[
+ ['Gold Marie','GOLD MARIE','4Bis','','100','275'],['Smart Cr. Cr.','SMART CREAM CRACKER','2Bis','','100','240'],['Smart Cr. Cr.','SMART CREAM CRACKER','4Bis','','60','450'],
+ ['Smart Cr. Cr. Buddy','SCC BUDDY','2Bis','','100','400'],['Real Bran Cr.','REAL BRAN CRACKER','2Bis','','80','320'],['Real Bran Cr.','REAL BRAN CRACKER','4Bis','','60','450'],
+ ['Butter Cookie','BUTTER COOKIE','2Bis','','100','240'],['Chocolate Cream','CHOCOLATE CREAM','2Bis','','60','210'],['Chocolate Cream','CHOCOLATE CREAM','45g','','60','300'],
+ ['Lemon Puff','LEMON PUFF','2Bis','','55-60','250']]},
+{p:6,m:'FS-02, 03, 04',n:3,rows:[
+ ['Baby Rusks Original','BABY RUSKS ORIGINAL','20g','','150-160','74400 pkts'],['Baby Rusks Apple','BABY RUSKS APPLE','20g','','150-160','74400 pkts'],
+ ['Baby Rusks Banana','BABY RUSKS BANANA','20g','','150-160','74400 pkts']]},
+{p:'E',m:'DXD 02 (enrobing)',n:1,rows:[
+ ['Roundies','ROUNDIES','40g','','35','300 (7 hrs)'],['Roundies','ROUNDIES','100g','','35','90 (7 hrs)'],['Imorre Choco Delight','IMORRE','90g','','35','400 (7 hrs)']]},
+{p:'E',m:'Soon True (encrusting)',n:1,rows:[
+ ['Real Temptation range','REAL TEMPTATION','1Bis','','90','200 (6 hrs)']]}
+];
+
+
+/* ---------- split grouped machines into individual units ---------- */
+const SPLIT={
+ 'VS 100 01 & 02':['VS 100 01','VS 100 02'],'Pakona 01 & 02':['Pakona 01','Pakona 02'],'Pakona 03 & 04':['Pakona 03','Pakona 04'],
+ 'MP 08/09/10':['MP 08','MP 09','MP 10'],'Cambell 01 & 02':['Cambell 01','Cambell 02'],'MP 05 & 06':['MP 05','MP 06'],
+ 'MP 19/20/21/22':['MP 19','MP 20','MP 21','MP 22'],'MP 15/16/17/18':['MP 15','MP 16','MP 17','MP 18'],
+ 'AW 01 & 02':['AW 01','AW 02'],'MP 25/26':['MP 25','MP 26'],'MP 27/28':['MP 27','MP 28'],'FS-02, 03, 04':['FS-02','FS-03','FS-04']
+};
+const UNITS=[];
+MACHINES.forEach(g=>{
+  (SPLIT[g.m]||[g.m]).forEach(name=>{
+    const packs=[];
+    g.rows.forEach(r=>{
+      let prod=r[0];
+      if(/^Gem \(Pakona 01/.test(prod)){ if(name!=='Pakona 01') return; prod='Gem'; }
+      const wm=/^([\d.]+)\s*g$/i.exec(r[2]);
+      let s=null; if(r[4]){const p=r[4].split('-').map(x=>parseFloat(x));s={min:p[0],max:p[p.length-1]};}
+      packs.push({prod,key:r[1],wLabel:r[2],w:wm?+wm[1]:null,lines:r[3]==='2 machines'?'':r[3],s,speedLabel:r[4],target:r[5]});
+    });
+    UNITS.push({id:UNITS.length,name,group:g.m,plant:g.p,cream:!!g.cream,packs});
+  });
+});
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const num=v=>{const x=parseFloat(v);return isFinite(x)?x:null};
+const f=(x,d=2)=>x==null||!isFinite(x)?'–':x.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const plantName=p=>p==='E'?'Enrobing & encrusting':'Plant '+p;
+const packText=k=>`${k.prod} ${k.wLabel}${k.lines?', '+k.lines:''}`;
+const unitOf=u=>u.cream?'/min':'ppm';
+
+let plant=1, oven=null, cards=[], uidSeq=0;
+
+/* ---------- plants ---------- */
+[1,2,3,4,5,6].forEach(p=>{
+  const b=document.createElement('button');b.type='button';b.textContent=p;b.setAttribute('aria-label','Plant '+p);
+  b.onclick=()=>{plant=p;renderPlants();renderBiscuits();};
+  $('plants').appendChild(b);
+});
+function renderPlants(){[...$('plants').children].forEach((b,i)=>b.setAttribute('aria-pressed',String(i+1===plant)));}
+
+/* ---------- biscuit ---------- */
+function renderBiscuits(){
+  const list=OVEN.filter(o=>o.plant===plant);
+  $('biscuit').innerHTML=list.map(o=>`<option value="${o.id}">${esc(o.name)}</option>`).join('');
+  oven=list[0];$('biscuit').value=oven.id;applyOven();
+}
+$('biscuit').onchange=e=>{oven=OVEN[+e.target.value];applyOven();};
+function applyOven(){
+  $('ovenMeta').innerHTML=`Baking time ${oven.bake} min`+(oven.tray?'':'. <b>No tray weight on the sheet for this biscuit.</b>');
+  setOvenVals();
+  buildCards();
+}
+function setOvenVals(){
+  setVal('ovenKg',oven.kgHr,'PDN-SP-243 issue 02');
+  if(oven.tray) setVal('trayKg',oven.tray,'PDN-SP-243 rev 02');
+  else setVal('trayKg','','Not on the sheet. Enter it to get trays/min',true);
+}
+function setVal(id,v,src,missing){
+  const el=$(id);el.value=v;el.dataset.sheet=v;
+  const s=$(id+'Src');s.textContent=src;s.className='src'+(missing?' missing':'');
+}
+['trayKg','ovenKg'].forEach(id=>$(id).addEventListener('input',()=>{
+  const el=$(id),s=$(id+'Src');
+  if(String(el.value)!==String(el.dataset.sheet)){s.textContent=el.dataset.sheet!==''?`Edited. Sheet value ${el.dataset.sheet}`:'Entered by you';s.className='src edited';}
+  calc();
+}));
+$('resetVals').onclick=()=>{setOvenVals();calc();};
+
+/* ---------- machine cards ---------- */
+function matchPacks(u){return u.packs.map((k,i)=>({k,i})).filter(o=>oven.pk.includes(o.k.key));}
+function makeCard(u,manual){
+  const opts=manual?u.packs.map((k,i)=>({k,i})):matchPacks(u);
+  const first=opts[0];
+  return {uid:++uidSeq,unit:u,manual,opts,pi:first?first.i:0,on:!!manual,speed:'',w:first&&first.k.w!=null?first.k.w:''};
+}
+function buildCards(){
+  const rank=u=>(u.plant===plant?0:2)+(u.cream?1:0);
+  cards=UNITS.filter(u=>matchPacks(u).length).sort((a,b)=>rank(a)-rank(b)||a.id-b.id).map(u=>makeCard(u,false));
+  renderCards();
+}
+function renderCards(){
+  const box=$('mlist');
+  if(!cards.length){box.innerHTML='<div class="none">No machine on the targets sheet is listed for this biscuit. Add one below.</div>';}
+  else box.innerHTML=cards.map(cardHTML).join('');
+  cards.forEach(c=>wireCard(c));
+  renderAdd();
+  calc();
+}
+function cardHTML(c){
+  const u=c.unit,k=u.packs[c.pi];
+  const sel=c.opts.length>1
+    ?`<select data-r="pack" aria-label="Pack on ${esc(u.name)}">${c.opts.map(o=>`<option value="${o.i}"${o.i===c.pi?' selected':''}>${esc(packText(o.k))}${o.k.speedLabel?' ('+o.k.speedLabel+' '+unitOf(u)+')':''}</option>`).join('')}</select>`
+    :`<p class="meta" style="margin:0"><b>${esc(packText(k))}</b></p>`;
+  return `<div class="mc${c.on?' on':''}" id="c${c.uid}">
+    <div class="mc-head">
+      <label class="sw"><input type="checkbox" data-r="on"${c.on?' checked':''} aria-label="${esc(u.name)} running"><span></span></label>
+      <div class="mc-name">${esc(u.name)}<small>${esc([u.plant!==plant?plantName(u.plant):'',u.cream?'creaming':''].filter(Boolean).join(', '))}</small></div>
+      <div class="mc-out" data-r="out"></div>
+      ${c.manual?`<button type="button" class="rm" data-r="rm" aria-label="Remove ${esc(u.name)}">×</button>`:''}
+    </div>
+    <div class="mc-body">
+      ${sel}
+      <div class="mc-row">
+        <div><label class="small" for="sp${c.uid}">Actual speed</label><div class="spd"><input type="number" id="sp${c.uid}" data-r="speed" min="0" step="any" inputmode="decimal" placeholder="0" value="${esc(c.speed)}"><span>${unitOf(u)}</span></div></div>
+        <div><label class="small" for="w${c.uid}">${u.cream?'Weight per piece (g)':'Pack weight (g)'}</label><input type="number" id="w${c.uid}" data-r="w" min="0" step="any" inputmode="decimal" value="${esc(c.w)}"></div>
+      </div>
+      <p class="mc-std" data-r="std"></p>
+    </div>
+  </div>`;
+}
+function wireCard(c){
+  const el=$('c'+c.uid); const q=r=>el.querySelector(`[data-r="${r}"]`);
+  q('on').onchange=e=>{c.on=e.target.checked;el.classList.toggle('on',c.on);if(c.on)q('speed').focus();calc();};
+  if(q('pack')) q('pack').onchange=e=>{c.pi=+e.target.value;const k=c.unit.packs[c.pi];c.w=k.w!=null?k.w:'';q('w').value=c.w;calc();};
+  q('speed').oninput=e=>{c.speed=e.target.value;calc();};
+  q('w').oninput=e=>{c.w=e.target.value;calc();};
+  if(q('rm')) q('rm').onclick=()=>{cards=cards.filter(x=>x!==c);renderCards();};
+}
+function renderAdd(){
+  const all=$('allPlants').checked, have=new Set(cards.map(c=>c.unit.id));
+  const plants=all?[1,2,3,4,5,6,'E']:[plant];
+  let html='<option value="">Choose a machine…</option>';
+  plants.forEach(p=>{
+    const us=UNITS.filter(u=>u.plant===p&&!have.has(u.id));
+    if(us.length) html+=`<optgroup label="${esc(plantName(p))}">${us.map(u=>`<option value="${u.id}">${esc(u.name)}${u.cream?' (creaming)':''}</option>`).join('')}</optgroup>`;
+  });
+  $('addSel').innerHTML=html;
+}
+$('allPlants').onchange=renderAdd;
+$('addSel').onchange=e=>{if(e.target.value==='')return;cards.push(makeCard(UNITS[+e.target.value],true));renderCards();const last=cards[cards.length-1];const sp=$('sp'+last.uid);if(sp)sp.focus();};
+$('stockNow').addEventListener('input',calc);
+
+/* ---------- calculation ---------- */
+function calc(){
+  const t=num($('trayKg').value), kgHr=num($('ovenKg').value);
+  const ovenKg=kgHr?kgHr/60:null;
+  const rows=[]; let kAct=0,kLo=0,kHi=0,nOn=0,nNoSpeed=0,nNoStd=0,nNoW=0,bothAct=0,bothMid=0;
+
+  cards.forEach(c=>{
+    const el=$('c'+c.uid); if(!el) return;
+    const u=c.unit,k=u.packs[c.pi],w=num(c.w),sp=num(c.speed);
+    const kg=v=>w?v*w/1000:null;
+    const lo=k.s?kg(k.s.min):null,hi=k.s?kg(k.s.max):null;
+    const act=sp>0?kg(sp):null;
+    const bits=[];
+    bits.push(k.s?`Standard <b>${k.speedLabel} ${unitOf(u)}</b>${lo!=null?` = <b>${k.s.min===k.s.max?f(lo):f(lo)+' – '+f(hi)}</b> kg/min`:''}`:'<span class="missing">No standard speed on the sheet</span>');
+    if(k.target) bits.push(`target ${esc(k.target)}${/\(|pkts/.test(k.target)?'':' cases'} / 8 hrs`);
+    if(!w) bits.push(`<span class="missing">Enter the ${u.cream?'weight per piece':'pack weight'} (sheet says "${esc(k.wLabel)}")</span>`);
+    el.querySelector('[data-r="std"]').innerHTML=bits.join(', ');
+    el.querySelector('[data-r="out"]').innerHTML=c.on&&act!=null?`${f(act)} <small>kg/min</small>`:'';
+    if(!c.on) return;
+    nOn++;
+    if(!w) nNoW++;
+    if(act!=null) kAct+=act; else nNoSpeed++;
+    if(lo!=null){kLo+=lo;kHi+=hi;} else nNoStd++;
+    if(act!=null&&lo!=null){bothAct+=act;bothMid+=(lo+hi)/2;}
+    rows.push({u,k,sp,act,lo,hi});
+  });
+
+  const toTrays=kgm=>t?Math.max(0,kgm)/t:null;
+  const gap=ovenKg!=null?ovenKg-kAct:null;
+  const trays=gap!=null?toTrays(gap):null;
+
+  /* hero */
+  let h='<p class="lbl">Trays to pack by hand per minute</p>';
+  if(!kgHr) h+='<p class="empty">Enter the standard oven output.</p>';
+  else if(!t) h+='<p class="empty">Enter the weight of one tray to get trays per minute.</p>';
+  else {
+    h+=`<p class="num">${f(trays)}<small>trays/min</small></p>`;
+    if(gap>0.0005) h+=`<p class="sub">${f(gap)} kg/min of the oven's ${f(ovenKg)} kg/min is not taken by the machines (${f(gap/ovenKg*100,0)}%). That is about <b>${f(trays*60,0)} trays per hour</b> and <b>${f(trays*480,0)} per 8-hour shift</b>.</p>`;
+    else h+=`<p class="sub">The running machines take all the oven output, so no trays are needed. Spare machine capacity: ${f(-gap)} kg/min (about ${f(-gap/t)} trays/min).</p>`;
+    const warn=[];
+    if(!nOn) warn.push('No machines are switched on, so the whole oven output goes into trays.');
+    if(nNoSpeed) warn.push(`${nNoSpeed} running machine${nNoSpeed>1?'s have':' has'} no speed entered and ${nNoSpeed>1?'are':'is'} counted as stopped.`);
+    if(nNoW) warn.push(`${nNoW} running machine${nNoW>1?'s need':' needs'} a pack weight.`);
+    if(warn.length) h+=`<p class="sub warnline">${warn.join(' ')}</p>`;
+  }
+  $('hero').innerHTML=h;
+
+  /* standard: same running machines at their sheet speeds */
+  if(t&&ovenKg&&nOn&&kHi>0){
+    const tLo=toTrays(ovenKg-kHi), tHi=toTrays(ovenKg-kLo), tMid=toTrays(ovenKg-(kLo+kHi)/2);
+    const rng=Math.abs(tHi-tLo)<0.005?f(tLo):f(tLo)+' – '+f(tHi);
+    $('std').innerHTML=`<span class="k">At standard speed</span><span class="v">${rng}<small>trays/min</small></span>
+      <span class="k">Based on</span><span class="v small">the same ${nOn-nNoStd} running machine${nOn-nNoStd>1?'s':''} at their sheet speeds (${f(kLo)} – ${f(kHi)} kg/min). Mid-point ${f(tMid)} trays/min.${nNoStd?` ${nNoStd} machine${nNoStd>1?'s have':' has'} no standard speed and ${nNoStd>1?'are':'is'} left out.`:''}</span>`;
+  } else $('std').innerHTML=`<span class="k">At standard speed</span><span class="v small">${nOn?'Fill in the tray weight and pack weights.':'Switch on the running machines to see the standard figure.'}</span>`;
+
+  /* chip: how the actual speed compares with standard, and what it costs in trays */
+  let chip='';
+  if(t&&bothMid>0&&bothAct>0){
+    const pct=bothAct/bothMid*100;
+    const extra=(ovenKg&&kHi>0)?trays-toTrays(ovenKg-(kLo+kHi)/2):0;
+    const cost=extra>0.005?`, adding ${f(extra)} trays/min against standard`:extra<-0.005?`, saving ${f(-extra)} trays/min against standard`:'';
+    if(pct<99.5) chip=`<span class="chip low">Machines at ${f(pct,0)}% of standard speed${cost}</span>`;
+    else if(pct>100.5) chip=`<span class="chip ok">Machines at ${f(pct,0)}% of standard speed${cost}</span>`;
+    else chip='<span class="chip ok">Machines at standard speed</span>';
+  }
+  $('chipWrap').innerHTML=chip;
+
+  /* split bar */
+  if(ovenKg){
+    const m=Math.min(kAct,ovenKg), tr=Math.max(0,ovenKg-kAct);
+    $('segM').style.width=(m/ovenKg*100)+'%'; $('segT').style.width=(tr/ovenKg*100)+'%';
+    $('lgM').textContent=`${f(m)} kg/min (${f(m/ovenKg*100,0)}%)`;
+    $('lgT').textContent=`${f(tr)} kg/min (${f(tr/ovenKg*100,0)}%)`;
+    $('split').setAttribute('aria-label',`Machines ${f(m/ovenKg*100,0)} percent, trays ${f(tr/ovenKg*100,0)} percent of oven output`);
+    $('splitNote').textContent=kAct>ovenKg?`The machines could take ${f(kAct-ovenKg)} kg/min more than the oven sends.`:`Bar is the full oven output, ${f(ovenKg)} kg/min (${f(kgHr,0)} kg/hr).`;
+  }
+
+  /* table */
+  if(nOn){
+    const pct=v=>ovenKg?` <small>(${f(v/ovenKg*100,0)}%)</small>`:'';
+    $('tbl').innerHTML=`<table><thead><tr><th>Machine</th><th>Speed</th><th>Actual</th><th>Standard</th></tr></thead><tbody>${
+      rows.map(r=>`<tr><td><b>${esc(r.u.name)}</b><br><small>${esc(packText(r.k))}</small></td><td>${r.sp>0?f(r.sp,r.sp%1?1:0)+' '+unitOf(r.u):'<small>not entered</small>'}</td><td>${f(r.act)}</td><td>${r.lo==null?'–':(Math.abs(r.lo-r.hi)<1e-9?f(r.lo):f(r.lo)+' – '+f(r.hi))}</td></tr>`).join('')
+    }</tbody><tfoot>
+      <tr><td>Machines total</td><td></td><td>${f(kAct)}${pct(kAct)}</td><td>${kHi>0?f(kLo)+' – '+f(kHi):'–'}</td></tr>
+      <tr><td>Oven output</td><td></td><td>${f(ovenKg)}</td><td>${f(ovenKg)}</td></tr>
+      <tr class="trays"><td>Into trays</td><td></td><td>${gap!=null?f(Math.max(0,gap)):'–'}</td><td>${ovenKg&&kHi>0?(Math.abs(kHi-kLo)<1e-9?f(Math.max(0,ovenKg-kHi)):f(Math.max(0,ovenKg-kHi))+' – '+f(Math.max(0,ovenKg-kLo))):'–'}</td></tr>
+    </tfoot></table>`;
+    $('tblNote').textContent='All figures in kg per minute.';
+  } else {$('tbl').innerHTML='';$('tblNote').textContent='';}
+
+  /* stock */
+  const st=num($('stockNow').value), so=$('stockOut');
+  if(st!=null&&st>=0&&trays!=null){
+    if(gap>0.0005) so.innerHTML=`Tray stock reaches <b>${f(st+trays*60,0)}</b> in 1 hour and <b>${f(st+trays*480,0)}</b> by the end of an 8-hour shift.`;
+    else { const spare=-gap/t; so.innerHTML=spare>0.005?`No new trays. If trays are re-fed, the spare capacity (${f(spare)} trays/min) clears the ${f(st,0)} trays in <b>${Math.floor(st/spare/60)?Math.floor(st/spare/60)+' h ':''}${Math.round((st/spare)%60)} min</b>.`:'No new trays, and no spare machine capacity to re-feed.'; }
+  } else so.textContent='Enter the trays already filled to see where the stock will be.';
+}
+
+renderPlants();renderBiscuits();
+</script>
+</body>
+</html>
+
+</body></html>
